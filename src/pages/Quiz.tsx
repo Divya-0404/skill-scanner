@@ -6,7 +6,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, ArrowRight, ArrowLeft, Brain, Target, RotateCcw } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { QuizGenerator } from "@/components/QuizGenerator";
-import { aiService, type QuizQuestion } from "@/services/aiService";
+
+interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  category: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
 
 const sampleQuestions: QuizQuestion[] = [
   {
@@ -106,19 +114,13 @@ export default function Quiz() {
     } else {
       setIsAnalyzing(true);
       try {
-        // Analyze answers with AI
-        const analysisData = selectedAnswers.map((answer, index) => ({
-          question: questions[index].question,
-          selectedAnswer: questions[index].options[answer],
-          correctAnswer: questions[index].correctAnswer,
-          category: questions[index].category
-        }));
+        // Simulate analysis time
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
-        await aiService.analyzeSkills(analysisData);
         setShowResults(true);
       } catch (error) {
         console.error('Analysis failed:', error);
-        setShowResults(true); // Show results anyway with fallback
+        setShowResults(true);
       } finally {
         setIsAnalyzing(false);
       }
@@ -307,7 +309,7 @@ export default function Quiz() {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
               <h1 className="text-2xl font-bold">
-                {aiService.hasApiKeys() ? 'AI-Generated' : 'Skill'} Assessment
+                Skills Assessment
               </h1>
               <div className="flex items-center gap-4">
                 <span className="text-muted-foreground">

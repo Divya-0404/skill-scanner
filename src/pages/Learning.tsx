@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { 
   BookOpen, 
@@ -13,11 +14,181 @@ import {
   Filter,
   Users,
   Award,
-  TrendingUp
+  TrendingUp,
+  ExternalLink,
+  CheckCircle,
+  PlayCircle,
+  FileText,
+  Video,
+  Globe
 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 
+interface LearningResource {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  type: 'video' | 'article' | 'course' | 'interactive';
+  duration: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  rating: number;
+  enrolled: number;
+  url?: string;
+  progress?: number;
+}
+
+interface LearningPath {
+  id: string;
+  title: string;
+  description: string;
+  courses: number;
+  duration: string;
+  level: string;
+  skills: string[];
+  progress: number;
+}
+
 export default function Learning() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const learningPaths: LearningPath[] = [
+    {
+      id: "1",
+      title: "Frontend Developer Path",
+      description: "Master modern web development with React, TypeScript, and industry best practices",
+      courses: 8,
+      duration: "6-8 months",
+      level: "Beginner to Advanced",
+      skills: ["React", "JavaScript", "TypeScript", "CSS", "HTML"],
+      progress: 45
+    },
+    {
+      id: "2", 
+      title: "Data Science Mastery",
+      description: "Learn data analysis, machine learning, and statistical modeling from scratch",
+      courses: 12,
+      duration: "8-10 months",
+      level: "Beginner to Advanced",
+      skills: ["Python", "Machine Learning", "Statistics", "SQL", "Pandas"],
+      progress: 20
+    },
+    {
+      id: "3",
+      title: "UX/UI Design Complete",
+      description: "Design thinking, user research, prototyping, and visual design principles",
+      courses: 6,
+      duration: "4-6 months", 
+      level: "Beginner to Intermediate",
+      skills: ["Figma", "User Research", "Prototyping", "Design Systems"],
+      progress: 0
+    }
+  ];
+
+  const learningResources: LearningResource[] = [
+    {
+      id: "1",
+      title: "React Hooks Deep Dive",
+      description: "Master React Hooks with practical examples and best practices",
+      category: "Frontend Development",
+      type: "video",
+      duration: "3h 45m",
+      level: "intermediate",
+      rating: 4.8,
+      enrolled: 15420,
+      progress: 75
+    },
+    {
+      id: "2",
+      title: "Machine Learning Fundamentals",
+      description: "Introduction to ML concepts, algorithms, and real-world applications",
+      category: "Data Science",
+      type: "course",
+      duration: "25h 30m",
+      level: "beginner", 
+      rating: 4.9,
+      enrolled: 8934,
+      progress: 30
+    },
+    {
+      id: "3",
+      title: "Design Systems in Practice",
+      description: "Building scalable design systems for modern applications",
+      category: "UX/UI Design",
+      type: "interactive",
+      duration: "4h 15m",
+      level: "intermediate",
+      rating: 4.7,
+      enrolled: 6721,
+      progress: 0
+    },
+    {
+      id: "4",
+      title: "SQL for Data Analysis",
+      description: "Master SQL queries, joins, and database optimization techniques",
+      category: "Data Science",
+      type: "course",
+      duration: "8h 20m", 
+      level: "beginner",
+      rating: 4.6,
+      enrolled: 12340,
+      progress: 60
+    },
+    {
+      id: "5",
+      title: "TypeScript Best Practices",
+      description: "Advanced TypeScript patterns and enterprise-level development",
+      category: "Frontend Development",
+      type: "article",
+      duration: "45m",
+      level: "advanced",
+      rating: 4.8,
+      enrolled: 9876,
+      progress: 100
+    },
+    {
+      id: "6",
+      title: "User Research Methods",
+      description: "Comprehensive guide to conducting effective user research",
+      category: "UX/UI Design",
+      type: "course",
+      duration: "6h 30m",
+      level: "beginner",
+      rating: 4.9,
+      enrolled: 5432,
+      progress: 0
+    }
+  ];
+
+  const categories = ["all", "Frontend Development", "Data Science", "UX/UI Design", "Backend Development", "DevOps", "Mobile Development"];
+
+  const filteredResources = learningResources.filter(resource => {
+    const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         resource.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || resource.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'video': return <Video className="w-4 h-4" />;
+      case 'article': return <FileText className="w-4 h-4" />;
+      case 'course': return <BookOpen className="w-4 h-4" />;
+      case 'interactive': return <PlayCircle className="w-4 h-4" />;
+      default: return <BookOpen className="w-4 h-4" />;
+    }
+  };
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'beginner': return 'bg-green-500/20 text-green-400';
+      case 'intermediate': return 'bg-yellow-500/20 text-yellow-400';
+      case 'advanced': return 'bg-red-500/20 text-red-400';
+      default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -40,18 +211,30 @@ export default function Learning() {
               Curated courses and resources tailored to your career goals and skill level
             </p>
             
-            {/* Search Bar */}
-            <div className="flex gap-4 max-w-2xl mx-auto">
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto mb-6">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input 
                   placeholder="Search courses, skills, or topics..."
                   className="pl-10 glass-card border-border/50"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="icon">
-                <Filter className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2">
+                <select 
+                  className="px-3 py-2 rounded-md border border-border bg-background text-sm"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>
+                      {category === 'all' ? 'All Categories' : category}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -60,9 +243,9 @@ export default function Learning() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { icon: BookOpen, label: "Courses Enrolled", value: "8", color: "text-primary" },
-            { icon: Award, label: "Certificates Earned", value: "12", color: "text-accent" },
-            { icon: TrendingUp, label: "Skills Improved", value: "23", color: "text-green-500" },
-            { icon: Clock, label: "Hours Learned", value: "145", color: "text-purple-500" },
+            { icon: Award, label: "Certificates Earned", value: "3", color: "text-accent" },
+            { icon: TrendingUp, label: "Skills Improved", value: "12", color: "text-green-500" },
+            { icon: Clock, label: "Hours Learned", value: "89", color: "text-purple-500" },
           ].map((stat, index) => (
             <motion.div
               key={index}
@@ -103,13 +286,114 @@ export default function Learning() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    {/* Placeholder for Learning Paths - Fetch from Firestore */}
-                    <div className="text-center py-10 text-muted-foreground">
-                      <p className="text-sm mb-2">No learning paths found.</p>
-                      <Button variant="outline" size="sm">
-                        Create Your First Learning Path
-                      </Button>
-                    </div>
+                    {learningPaths.map((path) => (
+                      <div key={path.id} className="glass-card p-6 hover-lift">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-xl font-semibold mb-2">{path.title}</h3>
+                            <p className="text-muted-foreground mb-3">{path.description}</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {path.skills.map((skill) => (
+                                <Badge key={skill} variant="outline" className="text-xs">
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>{path.courses} courses</span>
+                              <span>{path.duration}</span>
+                              <span>{path.level}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Progress</span>
+                            <span className="text-sm text-muted-foreground">{path.progress}%</span>
+                          </div>
+                          <Progress value={path.progress} className="h-2" />
+                        </div>
+                        <Button 
+                          variant={path.progress > 0 ? "default" : "cosmic"}
+                          className="w-full"
+                        >
+                          {path.progress > 0 ? "Continue Learning" : "Start Path"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Learning Resources */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Play className="w-5 h-5 text-accent" />
+                    <span>Learning Resources</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    {filteredResources.map((resource) => (
+                      <div key={resource.id} className="glass-card p-4 hover-lift">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              {getTypeIcon(resource.type)}
+                              <h4 className="font-semibold">{resource.title}</h4>
+                              {resource.progress === 100 && (
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {resource.description}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {resource.duration}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Star className="w-3 h-3" />
+                                {resource.rating}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                {resource.enrolled.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 ml-4">
+                            <Badge 
+                              variant="secondary" 
+                              className={getLevelColor(resource.level)}
+                            >
+                              {resource.level}
+                            </Badge>
+                            <Button size="sm" variant="outline">
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Open
+                            </Button>
+                          </div>
+                        </div>
+                        {resource.progress !== undefined && resource.progress > 0 && (
+                          <div className="mt-3">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-muted-foreground">Progress</span>
+                              <span className="text-xs text-muted-foreground">{resource.progress}%</span>
+                            </div>
+                            <Progress value={resource.progress} className="h-1" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -118,37 +402,7 @@ export default function Learning() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Quick Lessons */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Play className="w-5 h-5 text-accent" />
-                    <span>Quick Lessons</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Placeholder for Quick Lessons - Fetch from Firestore */}
-                    <div className="text-center py-10 text-muted-foreground">
-                      <p className="text-sm mb-2">No quick lessons found.</p>
-                      <Button variant="outline" size="sm">
-                        Create Your First Quick Lesson
-                      </Button>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="w-full mt-4">
-                    View All Lessons
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Learning Streaks */}
+            {/* Learning Streak */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -174,7 +428,7 @@ export default function Learning() {
               </Card>
             </motion.div>
 
-            {/* Recommended Skills */}
+            {/* Trending Skills */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -189,7 +443,7 @@ export default function Learning() {
                     {[
                       { name: "AI/Machine Learning", growth: "+45%" },
                       { name: "Cloud Computing", growth: "+38%" },
-                      { name: "Blockchain", growth: "+52%" },
+                      { name: "React/Frontend", growth: "+35%" },
                       { name: "Cybersecurity", growth: "+41%" },
                       { name: "Data Analysis", growth: "+33%" },
                     ].map((skill, index) => (
@@ -201,6 +455,33 @@ export default function Learning() {
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Quick Actions */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.0 }}
+            >
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button variant="outline" className="w-full justify-start">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Create Learning Goal
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Globe className="w-4 h-4 mr-2" />
+                    Explore Certificates
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Users className="w-4 h-4 mr-2" />
+                    Join Study Group
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>

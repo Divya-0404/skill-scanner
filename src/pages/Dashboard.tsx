@@ -14,38 +14,114 @@ import {
   Star,
   Award,
   Zap,
-  Clock
+  Clock,
+  BarChart,
+  BookMarked,
+  UserCheck
 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
-import dashboardPreview from "@/assets/dashboard-preview.jpg";
-import { db } from "@/firebaseConfig";
-import { collection, getDocs } from "firebase/firestore";
+import { getUserProgress } from "@/services/firestoreService";
+
+interface UserProgress {
+  userId: string;
+  totalQuizzes: number;
+  completedQuizzes: number;
+  averageScore: number;
+  skills: Record<string, number>;
+  recentQuizzes: Array<{
+    profession: string;
+    score: number;
+    date: string;
+  }>;
+}
 
 export default function Dashboard() {
-  const [skillsData, setSkillsData] = useState([]);
-  const [achievements, setAchievements] = useState([]);
-  const [recommendedCareers, setRecommendedCareers] = useState([]);
+  const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const mockAchievements = [
+    {
+      name: "Quick Learner",
+      description: "Complete 5 quizzes in one day",
+      unlocked: true,
+      icon: Zap
+    },
+    {
+      name: "Perfect Score",
+      description: "Score 100% on any quiz",
+      unlocked: true,
+      icon: Star
+    },
+    {
+      name: "Career Explorer",
+      description: "Take quizzes in 3 different professions",
+      unlocked: true,
+      icon: Briefcase
+    },
+    {
+      name: "Knowledge Master",
+      description: "Complete 10 quizzes",
+      unlocked: false,
+      icon: Award
+    }
+  ];
+
+  const mockCareerRecommendations = [
+    {
+      title: "Senior Frontend Developer",
+      company: "Tech Innovators Inc.",
+      salary: "$95,000 - $130,000",
+      match: 92,
+      skills: ["React", "JavaScript", "TypeScript", "CSS"]
+    },
+    {
+      title: "UX/UI Designer",
+      company: "Design Studio Pro",
+      salary: "$75,000 - $100,000", 
+      match: 88,
+      skills: ["Figma", "User Research", "Prototyping", "Design Systems"]
+    },
+    {
+      title: "Product Manager",
+      company: "Growth Ventures",
+      salary: "$100,000 - $140,000",
+      match: 85,
+      skills: ["Strategy", "Analytics", "Leadership", "Communication"]
+    }
+  ];
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Fetch skills data
-      const skillsSnapshot = await getDocs(collection(db, "skills"));
-      const skills = skillsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setSkillsData(skills);
-
-      // Fetch achievements data
-      const achievementsSnapshot = await getDocs(collection(db, "achievements"));
-      const achievements = achievementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAchievements(achievements);
-
-      // Fetch recommended careers data
-      const careersSnapshot = await getDocs(collection(db, "recommendedCareers"));
-      const careers = careersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setRecommendedCareers(careers);
+    const fetchUserData = async () => {
+      try {
+        // Simulate user ID (in real app, get from auth)
+        const userId = "demo-user-123";
+        const progress = await getUserProgress(userId);
+        setUserProgress(progress);
+      } catch (error) {
+        console.error("Failed to fetch user progress:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchData();
+    fetchUserData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 pt-24 pb-12">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading your dashboard...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +136,7 @@ export default function Dashboard() {
             className="flex flex-col md:flex-row md:items-center md:justify-between"
           >
             <div>
-              <h1 className="text-3xl font-bold mb-2">Welcome back, Alex!</h1>
+              <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
               <p className="text-muted-foreground">Ready to advance your career journey?</p>
             </div>
             <div className="flex items-center space-x-3 mt-4 md:mt-0">
@@ -78,10 +154,10 @@ export default function Dashboard() {
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { icon: Target, label: "Assessments", value: "12", color: "text-primary" },
-                { icon: Trophy, label: "Achievements", value: "8", color: "text-accent" },
-                { icon: TrendingUp, label: "Skill Growth", value: "+15%", color: "text-green-500" },
-                { icon: Briefcase, label: "Job Matches", value: "24", color: "text-purple-500" },
+                { icon: Target, label: "Completed", value: userProgress?.completedQuizzes.toString() || "0", color: "text-primary" },
+                { icon: Trophy, label: "Average Score", value: `${userProgress?.averageScore || 0}%`, color: "text-accent" },
+                { icon: TrendingUp, label: "Total Quizzes", value: userProgress?.totalQuizzes.toString() || "0", color: "text-green-500" },
+                { icon: Briefcase, label: "Skills Areas", value: Object.keys(userProgress?.skills || {}).length.toString(), color: "text-purple-500" },
               ].map((stat, index) => (
                 <motion.div
                   key={index}
@@ -114,23 +190,56 @@ export default function Dashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <TrendingUp className="w-5 h-5 text-primary" />
-                    <span>Your Skills</span>
+                    <span>Your Skills Progress</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {skillsData.map((skill, index) => (
+                  {userProgress?.skills && Object.entries(userProgress.skills).map(([skillName, skillLevel], index) => (
                     <div key={index}>
                       <div className="flex justify-between mb-2">
-                        <span className="font-medium">{skill.name}</span>
-                        <span className="text-muted-foreground">{skill.level}%</span>
+                        <span className="font-medium">{skillName}</span>
+                        <span className="text-muted-foreground">{skillLevel}%</span>
                       </div>
-                      <Progress value={skill.level} className="h-2" />
+                      <Progress value={skillLevel} className="h-2" />
                     </div>
                   ))}
                   <Button variant="outline" className="w-full">
                     <BookOpen className="w-4 h-4 mr-2" />
                     Improve Skills
                   </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Recent Quiz Results */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <BarChart className="w-5 h-5 text-blue-500" />
+                    <span>Recent Quiz Results</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {userProgress?.recentQuizzes?.map((quiz, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/20">
+                        <div>
+                          <p className="font-medium text-sm">{quiz.profession}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(quiz.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant={quiz.score >= 80 ? "default" : quiz.score >= 60 ? "secondary" : "destructive"}>
+                          {quiz.score}%
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -150,7 +259,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recommendedCareers.map((career, index) => (
+                    {mockCareerRecommendations.map((career, index) => (
                       <div key={index} className="glass-card p-4 hover-lift">
                         <div className="flex justify-between items-start mb-3">
                           <div>
@@ -197,7 +306,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {achievements.map((achievement, index) => (
+                    {mockAchievements.map((achievement, index) => (
                       <div
                         key={index}
                         className={`flex items-center space-x-3 p-3 rounded-lg ${
@@ -236,10 +345,10 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {[
-                      { action: "Completed React Skills Quiz", time: "2 hours ago", icon: Target },
+                      { action: "Completed Software Developer Quiz", time: "2 hours ago", icon: Target },
                       { action: "Unlocked Perfect Score badge", time: "1 day ago", icon: Award },
-                      { action: "Joined Frontend Developer community", time: "3 days ago", icon: Users },
-                      { action: "Started JavaScript learning path", time: "1 week ago", icon: BookOpen },
+                      { action: "Started UX Designer assessment", time: "3 days ago", icon: BookMarked },
+                      { action: "Improved Technical Skills by 15%", time: "1 week ago", icon: TrendingUp },
                     ].map((activity, index) => (
                       <div key={index} className="flex items-center space-x-3">
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -269,7 +378,7 @@ export default function Dashboard() {
                 <CardContent className="space-y-3">
                   <Button variant="outline" className="w-full justify-start">
                     <BookOpen className="w-4 h-4 mr-2" />
-                    Browse Learning Paths
+                    Browse Learning Resources
                   </Button>
                   <Button variant="outline" className="w-full justify-start">
                     <Users className="w-4 h-4 mr-2" />
@@ -277,7 +386,7 @@ export default function Dashboard() {
                   </Button>
                   <Button variant="outline" className="w-full justify-start">
                     <Target className="w-4 h-4 mr-2" />
-                    Set New Goal
+                    Take New Assessment
                   </Button>
                 </CardContent>
               </Card>
